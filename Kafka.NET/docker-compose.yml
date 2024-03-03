@@ -22,20 +22,20 @@ services:
 
   # producer:
   #   build: 
-  #     context: ./Producer
-  #     dockerfile: Producer.Dockerfile
+  #     context: .
+  #     dockerfile: Producer/Dockerfile
   #   environment:
-  #     KAFKA_TOPIC: "my-topic"  # Adjust topic name as needed
-  #     KAFKA_SERVER: "kafka:2024"
-  #     INPUT_FILE: "/app/data/input.txt"  # Adjust input file path as needed
+  #     KAFKA_TOPIC: "MyTopic"  # Adjust topic name as needed
+  #     KAFKA_SERVER: "kafka:9092"
+  #     INPUT_FILE: "/tmp/input.txt"  # Adjust input file path as needed
   #   volumes:
-  #     - ./data:/app/data  # Mount directory containing input file
+  #     - ./data:/tmp  # Mount directory containing input file
 
   # consumer:
   #   build:
-  #     context: ./Consumer
-  #     dockerfile: Consumer.Dockerfile
+  #     context: .
+  #     dockerfile: Consumer/Consumer.Dockerfile
   #   environment:
-  #     KAFKA_TOPIC: "my-topic"  # Adjust topic name as needed
-  #     KAFKA_SERVER: "kafka:2024"
-  #     KAFKA_CONSUMER_GROUP: "my-consumer-group"  # Adjust consumer group name as needed
+  #     KAFKA_TOPIC: "MyTopic"  # Adjust topic name as needed
+  #     KAFKA_SERVER: "kafka:9092"
+  #     KAFKA_CONSUMER_GROUP: "MyConsumerGroup"  # Adjust consumer group name as needed

@@ -20,7 +20,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Contract\Contract.csproj" />
+      <Reference Include="Contract">
+        <HintPath>..\data\net6.0\Contract.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

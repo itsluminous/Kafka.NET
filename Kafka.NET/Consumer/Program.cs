@@ -25,6 +25,7 @@ internal static class Program
         consumer.Subscribe(Topic);
 
         // Poll for new messages from the Kafka topic
+        Console.WriteLine($"Listening for new messages on {Topic}");
         while (true)
         {
             try

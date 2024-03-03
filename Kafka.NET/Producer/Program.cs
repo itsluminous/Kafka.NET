@@ -55,7 +55,7 @@ internal static class Program
         fileSystemWatcher.EnableRaisingEvents = true;
 
         // Keep the application running
-        Console.WriteLine("Press Ctrl+C to exit.");
+        Console.WriteLine("Ready to produce.\nPress Ctrl+C to exit.");
         ManualResetEvent waitHandle = new ManualResetEvent(false);
         Console.CancelKeyPress += (sender, e) =>
         {
