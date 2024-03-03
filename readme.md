@@ -11,3 +11,7 @@
 2. Build consumer image : ``docker build -t consumer.net Kafka.NET/Consumer``
 3. Start producer container : ``docker run -d -v ./Kafka.NET:/Config producer.net``
 4. Start consumer container : ``docker run -d -v ./Kafka.NET:/Config consumer.net``
+
+
+
+protoc --csharp_out=. Employee.proto

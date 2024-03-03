@@ -1,48 +1,49 @@
 ﻿using Confluent.Kafka;
-using Microsoft.Extensions.Configuration;
 
 namespace Consumer;
 
-public static class Consumer {
-    private const string DefaultConfigPath = "/Config/kafka.properties";
+internal static class Program
+{
+    private static readonly string BootstrapServers = Environment.GetEnvironmentVariable("KAFKA_SERVER") ?? "localhost:9092";
+    private static readonly string Topic = Environment.GetEnvironmentVariable("KAFKA_TOPIC") ?? "MyTopic";
+    private static readonly string ConsumerGroupId = Environment.GetEnvironmentVariable("KAFKA_CONSUMER_GROUP") ?? "MyConsumerGroup";
     
-    private static void Main(string[] args)
+
+    static void Main()
     {
-        var configPath = DefaultConfigPath;
-        if (args.Length == 1)
-            configPath = args[0];
-        else if(!File.Exists(configPath))
-            throw new ArgumentNullException("Please provide the configuration file path as a command line argument or put it in valid path");
-
-        IConfiguration configuration = new ConfigurationBuilder()
-        .AddIniFile(configPath)
-        .Build();
-
-        configuration["group.id"] = "kafka-dotnet-getting-started";
-        configuration["auto.offset.reset"] = "earliest";
-
-        const string topic = "purchases";
-
-        var cts = new CancellationTokenSource();
-        Console.CancelKeyPress += (_, e) => {
-            e.Cancel = true; // prevent the process from terminating.
-            cts.Cancel();
+        // Set up Kafka consumer configuration
+        var config = new ConsumerConfig
+        {
+            BootstrapServers = BootstrapServers,
+            GroupId = ConsumerGroupId,
+            AutoOffsetReset = AutoOffsetReset.Earliest
         };
 
-        using var consumer = new ConsumerBuilder<string, string>(
-            configuration.AsEnumerable()).Build();
-        consumer.Subscribe(topic);
-        try {
-            while (true) {
-                var cr = consumer.Consume(cts.Token);
-                Console.WriteLine($"Consumed event from topic {topic}: key = {cr.Message.Key,-10} value = {cr.Message.Value}");
+        // Create a Kafka consumer
+        using var consumer = new ConsumerBuilder<Ignore, byte[]>(config).Build();
+        // Subscribe to the Kafka topic
+        consumer.Subscribe(Topic);
+
+        // Poll for new messages from the Kafka topic
+        while (true)
+        {
+            try
+            {
+                var consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
+                if (consumeResult == null)
+                    continue;
+
+                // Convert the consumed bytes to your Protobuf message
+                var message = Employee.Parser.ParseFrom(consumeResult.Message.Value);
+
+                // Print the message
+                Console.WriteLine($"Received message: {message}");
+
             }
-        }
-        catch (OperationCanceledException) {
-            // Ctrl-C was pressed.
-        }
-        finally{
-            consumer.Close();
+            catch (ConsumeException e)
+            {
+                Console.WriteLine($"Error occurred: {e.Error.Reason}");
+            }
         }
     }
 }

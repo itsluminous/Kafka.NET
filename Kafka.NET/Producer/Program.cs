@@ -1,53 +1,67 @@
 ﻿using Confluent.Kafka;
-using Microsoft.Extensions.Configuration;
+using Google.Protobuf;
 
 namespace Producer;
 
-public static class Producer
+internal static class Program
 {
-    private const string DefaultConfigPath = "/Config/kafka.properties";
+    private static readonly string BootstrapServers = Environment.GetEnvironmentVariable("KAFKA_SERVER") ?? "localhost:9092";
+    private static readonly string Topic = Environment.GetEnvironmentVariable("KAFKA_TOPIC") ?? "MyTopic";
+    private static readonly string InputFile = Environment.GetEnvironmentVariable("INPUT_FILE") ?? "/tmp/input.txt";
 
-    private static void Main(string[] args)
+    private static void Main()
     {
-        var configPath = DefaultConfigPath;
-        if (args.Length == 1)
-            configPath = args[0];
-        else if(!File.Exists(configPath))
-            throw new ArgumentNullException("Please provide the configuration file path as a command line argument or put it in valid path");
-            
-
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddIniFile(configPath)
-            .Build();
-
-        const string topic = "purchases";
-
-        string[] users = { "eabara", "jsmith", "sgarcia", "jbernard", "htanaka", "awalther" };
-        string[] items = { "book", "alarm clock", "t-shirts", "gift card", "batteries" };
-
-        using var producer = new ProducerBuilder<string, string>(configuration.AsEnumerable()).Build();
-        var numProduced = 0;
-        var rnd = new Random();
-        const int numMessages = 10;
-        for (var i = 0; i < numMessages; ++i)
+        var config = new ProducerConfig
         {
-            var user = users[rnd.Next(users.Length)];
-            var item = items[rnd.Next(items.Length)];
+            BootstrapServers = BootstrapServers
+        };
 
-            producer.Produce(topic, new Message<string, string> { Key = user, Value = item },
-                (deliveryReport) =>
+        // Create a Kafka producer
+        using var producer = new ProducerBuilder<string, byte[]>(config).Build();
+        // Monitor the file for changes
+        using var fileSystemWatcher = new FileSystemWatcher(Path.GetDirectoryName(InputFile)!);
+        fileSystemWatcher.Filter = Path.GetFileName(InputFile);
+        fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
+
+        // Define the event handler for file change events
+        fileSystemWatcher.Changed += (sender, e) =>
+        {
+            // Read the changed data from the file
+            var changedData = File.ReadAllText(e.FullPath);
+
+            // Split the file data into fields (assuming data format is delimited)
+            var fields = changedData.Split('|');
+
+            // Create an instance of the Protobuf message and populate its fields
+            var employee = new Employee
+            {
+                Id = fields[0],
+                Name = fields[1],
+                Department = fields[2],
+                Salary = float.Parse(fields[3])
+            };
+
+            // Publish the changed data to the Kafka topic
+            producer.Produce(Topic, new Message<string, byte[]> { Key = employee.Id, Value = employee.ToByteArray() },
+                deliveryReport =>
                 {
-                    if (deliveryReport.Error.Code != ErrorCode.NoError) {
-                        Console.WriteLine($"Failed to deliver message: {deliveryReport.Error.Reason}");
-                    }
-                    else {
-                        Console.WriteLine($"Produced event to topic {topic}: key = {user,-10} value = {item}");
-                        numProduced += 1;
-                    }
+                    Console.WriteLine(deliveryReport.Error != null && deliveryReport.Error.IsError
+                        ? $"Failed to publish message: {deliveryReport.Error.Reason}"
+                        : $"Message published: {deliveryReport.Offset}");
                 });
-        }
+        };
 
-        producer.Flush(TimeSpan.FromSeconds(10));
-        Console.WriteLine($"{numProduced} messages were produced to topic {topic}");
+        // Start monitoring the file
+        fileSystemWatcher.EnableRaisingEvents = true;
+
+        // Keep the application running
+        Console.WriteLine("Press Ctrl+C to exit.");
+        ManualResetEvent waitHandle = new ManualResetEvent(false);
+        Console.CancelKeyPress += (sender, e) =>
+        {
+            waitHandle.Set();
+            e.Cancel = true;
+        };
+        waitHandle.WaitOne();
     }
 }

@@ -4,4 +4,5 @@
 **/.idea
 **/bin
 **/obj
+**/out
 **/.DS_Store
