@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -21,7 +21,7 @@
 
     <ItemGroup>
       <Reference Include="Contract">
-        <HintPath>..\data\net6.0\Contract.dll</HintPath>
+        <HintPath>..\data\net8.0\Contract.dll</HintPath>
       </Reference>
     </ItemGroup>
 
